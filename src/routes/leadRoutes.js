@@ -12,6 +12,8 @@ const {
   uploadDocument,
   completeUpload,
   getLeadDocuments,
+  docusignWebhook,
+  getContractStatus,
   uploadMiddleware,
 } = require("../controllers/leadController");
 const { protect } = require("../middleware/auth");
@@ -27,9 +29,13 @@ router.get("/public/:uniqueId", getLeadByUniqueId);
 router.post("/public/:uniqueId/upload", uploadMiddleware, uploadDocument);
 router.post("/public/:uniqueId/complete", completeUpload);
 
-// Action endpoints (update status + send email)
+// Action endpoints (update status + send email/contract)
 router.post("/:id/approve", protect, approveLead);
 router.post("/:id/request-documents", protect, requestDocuments);
 router.post("/:id/decline", protect, declineLead);
+router.get("/:id/contract-status", protect, getContractStatus);
+
+// DocuSign webhook (no auth — DocuSign calls this directly)
+router.post("/webhook/docusign", docusignWebhook);
 
 module.exports = router;

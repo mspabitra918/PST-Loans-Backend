@@ -11,6 +11,7 @@ const {
   sendDeclineEmail,
   sendApplicationConfirmation,
 } = require("../utils/mail");
+const { sendContract, getEnvelopeStatus } = require("../utils/docusign");
 
 // Configure Cloudinary
 cloudinary.config({
@@ -221,19 +222,124 @@ const approveLead = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Lead not found" });
 
-    await db("leads").where({ id }).update({ status: "Approved" });
+    // Send the contract via DocuSign
+    let envelopeId = null;
+    let contractSent = false;
+    try {
+      const docuSignResult = await sendContract(lead);
+      envelopeId = docuSignResult.envelopeId;
+      contractSent = true;
+      console.log(
+        `DocuSign envelope ${envelopeId} sent to ${lead.email}`,
+      );
+    } catch (docuSignError) {
+      console.error("DocuSign contract send failed:", docuSignError);
+    }
+
+    // Update lead status and store envelope info
+    await db("leads")
+      .where({ id })
+      .update({
+        status: "Approved",
+        docusign_envelope_id: envelopeId,
+        contract_status: contractSent ? "sent" : "none",
+        contract_sent_at: contractSent ? db.fn.now() : null,
+      });
+
     await fireCAPIEvent("ApprovedLead", lead);
 
+    // Send the approval notification email
     const emailSent = await sendApprovalEmail(lead);
 
     res.json({
       success: true,
-      message: `Lead approved${emailSent ? " and contract email sent" : ", but email failed to send"}`,
+      message: contractSent
+        ? `Lead approved and DocuSign contract sent to ${lead.email}`
+        : `Lead approved${emailSent ? " and notification email sent (DocuSign failed)" : ", but all notifications failed"}`,
       emailSent,
+      contractSent,
+      envelopeId,
     });
   } catch (error) {
     console.error("Error approving lead:", error);
     res.status(500).json({ success: false, message: "Error approving lead" });
+  }
+};
+
+const docusignWebhook = async (req, res) => {
+  try {
+    const body = req.body;
+
+    // DocuSign Connect sends XML by default, but can be configured for JSON.
+    // With JSON payload, the envelope status is in the body directly.
+    const envelopeId = body.envelopeId || body.EnvelopeStatus?.EnvelopeID;
+    const status = body.status || body.EnvelopeStatus?.Status;
+
+    if (!envelopeId) {
+      console.warn("DocuSign webhook received without envelopeId");
+      return res.status(200).send("ok");
+    }
+
+    console.log(`DocuSign webhook: envelope ${envelopeId} status=${status}`);
+
+    const statusMap = {
+      completed: "signed",
+      declined: "declined",
+      voided: "voided",
+      delivered: "delivered",
+      sent: "sent",
+    };
+
+    const contractStatus = statusMap[status?.toLowerCase()] || status?.toLowerCase();
+    const updateData = { contract_status: contractStatus };
+
+    if (contractStatus === "signed") {
+      updateData.contract_signed_at = db.fn.now();
+    }
+
+    await db("leads")
+      .where({ docusign_envelope_id: envelopeId })
+      .update(updateData);
+
+    res.status(200).send("ok");
+  } catch (error) {
+    console.error("DocuSign webhook error:", error);
+    res.status(200).send("ok"); // Always return 200 so DocuSign doesn't retry
+  }
+};
+
+const getContractStatus = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const lead = await db("leads").where({ id }).first();
+    if (!lead)
+      return res
+        .status(404)
+        .json({ success: false, message: "Lead not found" });
+
+    // If we have an envelope ID, optionally fetch live status from DocuSign
+    let liveStatus = null;
+    if (lead.docusign_envelope_id) {
+      try {
+        liveStatus = await getEnvelopeStatus(lead.docusign_envelope_id);
+      } catch (err) {
+        console.error("Failed to fetch live DocuSign status:", err);
+      }
+    }
+
+    res.json({
+      success: true,
+      contractStatus: lead.contract_status,
+      envelopeId: lead.docusign_envelope_id,
+      contractSentAt: lead.contract_sent_at,
+      contractSignedAt: lead.contract_signed_at,
+      liveStatus,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching contract status" });
   }
 };
 
@@ -476,5 +582,7 @@ module.exports = {
   uploadDocument,
   completeUpload,
   getLeadDocuments,
+  docusignWebhook,
+  getContractStatus,
   uploadMiddleware: upload.single("file"),
 };
