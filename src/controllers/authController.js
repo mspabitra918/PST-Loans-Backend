@@ -135,4 +135,11 @@ const verifyOTP = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP };
+const admin = async (req, res) => {
+  const { email } = req.body;
+
+  const adminUser = await db("users").where({ email }).first();
+  return res.json({ success: true, adminUser });
+};
+
+module.exports = { register, login, verifyOTP, admin };

@@ -139,10 +139,27 @@ const submitLead = async (req, res) => {
 };
 
 const getLeads = async (req, res) => {
+  const { search, date } = req.query;
   try {
-    const leads = await db("leads").orderBy("created_at", "desc");
+    let query = db("leads");
+
+    if (search) {
+      query = query.where((builder) => {
+        builder.where("first_name", "like", `%${search}%`)
+          .orWhere("last_name", "like", `%${search}%`)
+          .orWhere("email", "like", `%${search}%`)
+          .orWhere("unique_lead_id", "like", `%${search}%`);
+      });
+    }
+
+    if (date) {
+      query = query.whereRaw("DATE(created_at) = ?", [date]);
+    }
+
+    const leads = await query.orderBy("created_at", "desc");
     res.json({ success: true, leads });
   } catch (error) {
+    console.error("Error fetching leads:", error);
     res.status(500).json({ success: false, message: "Error fetching leads" });
   }
 };
