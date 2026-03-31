@@ -374,7 +374,6 @@ const requestDocuments = async (req, res) => {
 };
 
 const declineLead = async (req, res) => {
-  documents;
   const { id } = req.params;
 
   try {

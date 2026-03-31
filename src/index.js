@@ -1,28 +1,41 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const morgan = require("morgan");
+require("dotenv").config();
 
-const leadRoutes = require('./routes/leadRoutes');
-const authRoutes = require('./routes/authRoutes');
+const leadRoutes = require("./routes/leadRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
 // Middleware
 app.use(helmet());
+// CORS — allow frontend
 app.use(cors());
+// app.use(
+//   cors({
+//     origin: [
+//       "https://www.creeklend.com",
+//       "https://creeklend.com",
+//       "www.creeklend.com",
+//       "creeklend.com",
+//       process.env.FRONTEND_URL || "http://localhost:3000",
+//     ],
+//     credentials: true,
+//   }),
+// );
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Routes
-app.use('/api/leads', leadRoutes);
-app.use('/api/auth', authRoutes);
+app.use("/api/leads", leadRoutes);
+app.use("/api/auth", authRoutes);
 
 // Basic Route
-app.get('/', (req, res) => {
-  res.send('PST Loans API');
+app.get("/", (req, res) => {
+  res.send("PST Loans API");
 });
 
 // Error handling middleware
@@ -30,8 +43,8 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: "Something went wrong!",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
