@@ -142,4 +142,19 @@ const admin = async (req, res) => {
   return res.json({ success: true, adminUser });
 };
 
-module.exports = { register, login, verifyOTP, admin };
+const getMe = async (req, res) => {
+  try {
+    const user = await db("users")
+      .where({ id: req.user.id })
+      .select("id", "name", "email", "role", "created_at")
+      .first();
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching user" });
+  }
+};
+
+module.exports = { register, login, verifyOTP, admin, getMe };
