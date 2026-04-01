@@ -146,7 +146,8 @@ const getLeads = async (req, res) => {
 
     if (search) {
       query = query.where((builder) => {
-        builder.where("first_name", "like", `%${search}%`)
+        builder
+          .where("first_name", "like", `%${search}%`)
           .orWhere("last_name", "like", `%${search}%`)
           .orWhere("email", "like", `%${search}%`)
           .orWhere("unique_lead_id", "like", `%${search}%`);
@@ -229,9 +230,7 @@ const approveLead = async (req, res) => {
       const docuSignResult = await sendContract(lead);
       envelopeId = docuSignResult.envelopeId;
       contractSent = true;
-      console.log(
-        `DocuSign envelope ${envelopeId} sent to ${lead.email}`,
-      );
+      console.log(`DocuSign envelope ${envelopeId} sent to ${lead.email}`);
     } catch (docuSignError) {
       console.error("DocuSign contract send failed:", docuSignError);
     }
@@ -290,7 +289,8 @@ const docusignWebhook = async (req, res) => {
       sent: "sent",
     };
 
-    const contractStatus = statusMap[status?.toLowerCase()] || status?.toLowerCase();
+    const contractStatus =
+      statusMap[status?.toLowerCase()] || status?.toLowerCase();
     const updateData = { contract_status: contractStatus };
 
     if (contractStatus === "signed") {

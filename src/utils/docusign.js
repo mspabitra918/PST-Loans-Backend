@@ -20,19 +20,37 @@ const DOCUSIGN_WEBHOOK_URL = process.env.DOCUSIGN_WEBHOOK_URL;
  * Get a DocuSign API client authenticated via JWT Grant.
  */
 async function getDocuSignClient() {
+  console.log("Getting DocuSign client...");
+  console.log("Integration Key:", DOCUSIGN_INTEGRATION_KEY);
+  console.log("User ID:", DOCUSIGN_USER_ID);
+  console.log("OAuth Base Path:", DOCUSIGN_OAUTH_BASE);
+  console.log("Base Path:", DOCUSIGN_BASE_PATH);
+
   const apiClient = new docusign.ApiClient();
   apiClient.setBasePath(DOCUSIGN_BASE_PATH);
   apiClient.setOAuthBasePath(DOCUSIGN_OAUTH_BASE);
 
   const privateKey = fs.readFileSync(DOCUSIGN_PRIVATE_KEY_PATH);
+  console.log("Private Key loaded from:", DOCUSIGN_PRIVATE_KEY_PATH);
 
-  const results = await apiClient.requestJWTUserToken(
-    DOCUSIGN_INTEGRATION_KEY,
-    DOCUSIGN_USER_ID,
-    ["signature", "impersonation"],
-    privateKey,
-    3600, // token expires in 1 hour
-  );
+  let results;
+  try {
+    results = await apiClient.requestJWTUserToken(
+      DOCUSIGN_INTEGRATION_KEY,
+      DOCUSIGN_USER_ID,
+      ["signature"],
+      privateKey,
+      3600, // token expires in 1 hour
+    );
+  } catch (e) {
+    console.error("DocuSign JWT Grant Error:", e.response?.data || e.message);
+    if (e.response?.data?.error === "invalid_grant") {
+      console.error(
+        "Hint: This often means your Integration Key, User ID, or Private Key is incorrect, or you haven't granted consent yet.",
+      );
+    }
+    throw e;
+  }
 
   apiClient.addDefaultHeader(
     "Authorization",
