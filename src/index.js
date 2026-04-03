@@ -14,19 +14,19 @@ const app = express();
 // Middleware
 app.use(helmet());
 // CORS — allow frontend
-app.use(cors());
-// app.use(
-//   cors({
-//     origin: [
-//       "https://www.creeklend.com",
-//       "https://creeklend.com",
-//       "www.creeklend.com",
-//       "creeklend.com",
-//       process.env.FRONTEND_URL || "http://localhost:3000",
-//     ],
-//     credentials: true,
-//   }),
-// );
+// app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "www.pstloans.com ",
+      "https://pstloans.com ",
+      "pstloans.com",
+      "https://www.pstloans.com",
+      process.env.FRONTEND_URL || "http://localhost:3000",
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
