@@ -20,8 +20,8 @@ const frontendUrl = String(rawFrontendUrl).trim().replace(/\/+$/, "");
 const allowedOrigins = new Set([
   "https://pstloans.com",
   "https://www.pstloans.com",
-  "pstloans.com",
-  "www.pstloans.com ",
+  "http://pstloans.com",
+  "http://www.pstloans.com",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   frontendUrl,
