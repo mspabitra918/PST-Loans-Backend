@@ -42,7 +42,7 @@ const corsOptions = {
 
 // CORS must come before helmet so preflight responses aren't blocked
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("/{*splat}", cors(corsOptions));
 
 app.use(
   helmet({
