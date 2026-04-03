@@ -12,39 +12,43 @@ const authRoutes = require("./routes/authRoutes");
 const app = express();
 
 // Middleware
-app.use(helmet());
-
 const rawFrontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
 const frontendUrl = String(rawFrontendUrl).trim().replace(/\/+$/, "");
 
 const allowedOrigins = new Set([
   "https://pstloans.com",
   "https://www.pstloans.com",
-  "http://pstloans.com",
-  "http://www.pstloans.com",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   frontendUrl,
 ]);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow non-browser requests and same-origin calls (e.g., server-to-server)
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests and same-origin calls (e.g., server-to-server)
+    if (!origin) return callback(null, true);
 
-      const safeOrigin = String(origin).trim().replace(/\/+$/, "");
-      if (allowedOrigins.has(safeOrigin)) {
-        return callback(null, true);
-      }
-      const msg = `CORS policy blocked origin: ${origin}`;
-      return callback(new Error(msg), false);
-    },
-    credentials: true,
+    const safeOrigin = String(origin).trim().replace(/\/+$/, "");
+    if (allowedOrigins.has(safeOrigin)) {
+      return callback(null, true);
+    }
+    console.error(`CORS blocked origin: ${origin}`);
+    return callback(new Error(`CORS policy blocked origin: ${origin}`), false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// CORS must come before helmet so preflight responses aren't blocked
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   }),
 );
-
-app.options("*", cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"));
 
