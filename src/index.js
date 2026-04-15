@@ -8,6 +8,7 @@ require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const leadRoutes = require("./routes/leadRoutes");
 const authRoutes = require("./routes/authRoutes");
+const xmlRoutes = require("./routes/xmlRoutes");
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use(morgan("dev"));
 
 // Routes
 app.use("/api/leads", leadRoutes);
+app.use("/api/leads/export", xmlRoutes);
 app.use("/api/auth", authRoutes);
 
 // Basic Route
