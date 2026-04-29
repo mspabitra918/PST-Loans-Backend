@@ -6,6 +6,7 @@ const {
   getLeadById,
   getLeadByUniqueId,
   updateLeadStatus,
+  updateLeadDetails,
   approveLead,
   requestDocuments,
   declineLead,
@@ -23,6 +24,7 @@ router.get("/", protect, adminOnly, getLeads);
 router.get("/:id", protect, adminOnly, getLeadById);
 router.get("/:id/documents", protect, adminOnly, getLeadDocuments);
 router.put("/:id/status", protect, adminOnly, updateLeadStatus);
+router.patch("/:id", protect, adminOnly, updateLeadDetails);
 
 // Public upload routes
 router.get("/public/:uniqueId", getLeadByUniqueId);

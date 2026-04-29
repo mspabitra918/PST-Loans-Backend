@@ -145,12 +145,12 @@ const getLeads = async (req, res) => {
     let query = db("leads");
 
     if (search) {
+      const term = `%${search}%`;
       query = query.where((builder) => {
         builder
-          .where("first_name", "like", `%${search}%`)
-          .orWhere("last_name", "like", `%${search}%`)
-          .orWhere("email", "like", `%${search}%`)
-          .orWhere("unique_lead_id", "like", `%${search}%`);
+          .whereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [term])
+          .orWhere("email", "ilike", term)
+          .orWhere("unique_lead_id", "ilike", term);
       });
     }
 
@@ -181,6 +181,7 @@ const getLeadById = async (req, res) => {
 
     res.json({ success: true, lead, documents });
   } catch (error) {
+    console.error("Error fetching lead details:", error);
     res
       .status(500)
       .json({ success: false, message: "Error fetching lead details" });
@@ -210,6 +211,47 @@ const updateLeadStatus = async (req, res) => {
     res.json({ success: true, message: `Status updated to ${status}` });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error updating status" });
+  }
+};
+
+const updateLeadDetails = async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  try {
+    const lead = await db("leads").where({ id }).first();
+    if (!lead)
+      return res
+        .status(404)
+        .json({ success: false, message: "Lead not found" });
+
+    // If updating bank info, re-encrypt the sensitive fields.
+    // Accept either camelCase (routingNumber) or snake_case (routing_number).
+    const rawRouting = updateData.routingNumber ?? updateData.routing_number;
+    if (rawRouting) {
+      updateData.routing_number = encrypt(rawRouting);
+      delete updateData.routingNumber;
+    }
+    const rawAccount = updateData.accountNumber ?? updateData.account_number;
+    if (rawAccount) {
+      updateData.account_number = encrypt(rawAccount);
+      delete updateData.accountNumber;
+    }
+
+    const ssnLast4 = updateData.ssnLast4 ?? updateData.ssn_last4;
+    if (ssnLast4) {
+      updateData.ssn_last4_hash = hashSSN(ssnLast4);
+      delete updateData.ssnLast4;
+      delete updateData.ssn_last4;
+    }
+
+    await db("leads").where({ id }).update(updateData);
+    res.json({ success: true, message: "Lead details updated successfully" });
+  } catch (error) {
+    console.error("Error updating lead details:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error updating lead details" });
   }
 };
 
@@ -583,5 +625,6 @@ module.exports = {
   getLeadDocuments,
   docusignWebhook,
   getContractStatus,
+  updateLeadDetails,
   uploadMiddleware: upload.single("file"),
 };
