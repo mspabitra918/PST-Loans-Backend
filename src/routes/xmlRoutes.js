@@ -7,17 +7,29 @@ const router = express.Router();
 
 router.get("/download", protect, adminOnly, async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, search } = req.query;
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    if (!search && (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date)))) {
       return res
         .status(400)
-        .json({ success: false, message: "Valid date (YYYY-MM-DD) is required" });
+        .json({ success: false, message: "Valid date (YYYY-MM-DD) or search term is required" });
     }
 
-    const leads = await db("leads")
-      .whereRaw("DATE(created_at) = ?", [date])
-      .orderBy("created_at", "desc");
+    let query = db("leads");
+
+    if (search) {
+      const term = `%${search}%`;
+      query = query.where((builder) => {
+        builder
+          .whereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [term])
+          .orWhere("email", "ilike", term)
+          .orWhere("unique_lead_id", "ilike", term);
+      });
+    } else if (date) {
+      query = query.whereRaw("DATE(created_at) = ?", [date]);
+    }
+
+    const leads = await query.orderBy("created_at", "desc");
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Leads");
@@ -67,7 +79,7 @@ router.get("/download", protect, adminOnly, async (req, res) => {
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="leads-${date}.xlsx"`,
+      `attachment; filename="leads-${search || date}.xlsx"`,
     );
 
     const buffer = await workbook.xlsx.writeBuffer();

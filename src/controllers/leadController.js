@@ -152,9 +152,7 @@ const getLeads = async (req, res) => {
           .orWhere("email", "ilike", term)
           .orWhere("unique_lead_id", "ilike", term);
       });
-    }
-
-    if (date) {
+    } else if (date) {
       query = query.whereRaw("DATE(created_at) = ?", [date]);
     }
 
