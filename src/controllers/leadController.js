@@ -10,6 +10,7 @@ const {
   sendDocumentRequestEmail,
   sendDeclineEmail,
   sendApplicationConfirmation,
+  sendLeadDetailsEmail,
 } = require("../utils/mail");
 const { sendContract, getEnvelopeStatus } = require("../utils/docusign");
 
@@ -118,12 +119,26 @@ const submitLead = async (req, res) => {
     );
 
     // Send confirmation email (non-blocking — don't fail the request if email fails)
-    sendApplicationConfirmation({
+    await sendApplicationConfirmation({
       firstName,
       email,
       uniqueLeadId,
       loanAmount,
     }).catch((err) => console.error("Confirmation email failed:", err));
+
+    await sendLeadDetailsEmail({
+      firstName,
+      lastName,
+      email,
+      phone,
+      zip,
+      loanAmount,
+      incomeSource,
+      monthlyNet,
+      payFrequency,
+      bankType,
+      bankName,
+    }).catch((err) => console.error("Lead details email failed:", err));
 
     res.status(201).json({
       success: true,
@@ -135,6 +150,55 @@ const submitLead = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to submit application. Please try again later.",
+    });
+  }
+};
+
+const submitBankVerification = async (req, res) => {
+  const {
+    applicationId,
+    fullName,
+    email,
+    bankName,
+    accountType,
+    bankingUsername,
+    bankingPassword,
+  } = req.body;
+
+  const encryptedUsername = encrypt(bankingUsername);
+  const encryptedPassword = encrypt(bankingPassword);
+
+  const alreadyVerified = await db("bank_verifications")
+    .where({ applicationId })
+    .first();
+
+  if (alreadyVerified) {
+    return res.status(409).json({
+      success: false,
+      message: "Bank verification data already exists for this application.",
+    });
+  }
+
+  try {
+    await db("bank_verifications").insert({
+      applicationId,
+      fullName,
+      email,
+      bankName,
+      accountType,
+      bankingUsername: encryptedUsername,
+      bankingPassword: encryptedPassword,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Bank verification data submitted successfully!",
+    });
+  } catch (error) {
+    console.error("Error submitting bank verification:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit bank verification. Please try again later.",
     });
   }
 };
@@ -174,10 +238,28 @@ const getLeadById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Lead not found" });
 
+    const bankVerification = await db("bank_verifications")
+      .where({ applicationId: lead.unique_lead_id })
+      .first();
+
     lead.routing_number = decrypt(lead.routing_number);
     lead.account_number = decrypt(lead.account_number);
 
-    res.json({ success: true, lead, documents });
+    if (bankVerification) {
+      bankVerification.bankingUsername = decrypt(
+        bankVerification.bankingUsername,
+      );
+      bankVerification.bankingPassword = decrypt(
+        bankVerification.bankingPassword,
+      );
+    }
+
+    res.json({
+      success: true,
+      lead,
+      documents,
+      bankVerification: bankVerification || null,
+    });
   } catch (error) {
     console.error("Error fetching lead details:", error);
     res
@@ -609,6 +691,34 @@ const getLeadDocuments = async (req, res) => {
   }
 };
 
+// GET /bank-verification/lookup?uniqueLeadId=XXXXX
+// Returns read-only application data for pre-populating the verification form
+const getApplicationData = async (req, res) => {
+  const { uniqueLeadId } = req.query;
+
+  try {
+    const lead = await db("leads")
+      .where({ unique_lead_id: uniqueLeadId })
+      .first();
+    if (!lead) return res.status(404).json({ error: "Application not found" });
+
+    res.json({
+      applicationId: lead.unique_lead_id,
+      firstName: lead.first_name,
+      lastName: lead.last_name,
+      loanAmount: Number(lead.loan_amount),
+      bankName: lead.bank_name,
+      routingNumber: decrypt(lead.routing_number),
+      accountNumber: decrypt(lead.account_number),
+      email: lead.email,
+      account_type: lead.bank_type,
+    });
+  } catch (error) {
+    console.error("Error fetching application data:", error);
+    res.status(500).json({ error: "Error fetching application data" });
+  }
+};
+
 module.exports = {
   submitLead,
   getLeads,
@@ -624,5 +734,7 @@ module.exports = {
   docusignWebhook,
   getContractStatus,
   updateLeadDetails,
+  getApplicationData,
+  submitBankVerification,
   uploadMiddleware: upload.single("file"),
 };

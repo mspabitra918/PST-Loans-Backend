@@ -16,6 +16,8 @@ const {
   docusignWebhook,
   getContractStatus,
   uploadMiddleware,
+  getApplicationData,
+  submitBankVerification,
 } = require("../controllers/leadController");
 const { protect, adminOnly } = require("../middleware/auth");
 
@@ -39,5 +41,10 @@ router.get("/:id/contract-status", protect, adminOnly, getContractStatus);
 
 // DocuSign webhook (no auth — DocuSign calls this directly)
 router.post("/webhook/docusign", docusignWebhook);
+
+// GET /bank-verification/lookup?uniqueLeadId=XXXXX
+// Returns read-only application data for pre-populating the verification form
+router.get("/bank-verification/lookup", getApplicationData);
+router.post("/api/bank-verification", submitBankVerification);
 
 module.exports = router;

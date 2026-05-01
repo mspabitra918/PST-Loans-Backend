@@ -9,6 +9,10 @@ require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 const leadRoutes = require("./routes/leadRoutes");
 const authRoutes = require("./routes/authRoutes");
 const xmlRoutes = require("./routes/xmlRoutes");
+const {
+  getApplicationData,
+  submitBankVerification,
+} = require("./controllers/leadController");
 
 const app = express();
 
@@ -57,6 +61,10 @@ app.use(morgan("dev"));
 app.use("/api/leads", leadRoutes);
 app.use("/api/leads/export", xmlRoutes);
 app.use("/api/auth", authRoutes);
+
+// Bank Verification Lookup (Root level for easier access)
+app.get("/bank-verification/lookup", getApplicationData);
+app.post("/api/bank-verification", submitBankVerification);
 
 // Basic Route
 app.get("/", (req, res) => {

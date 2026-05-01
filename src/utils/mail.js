@@ -8,6 +8,8 @@ const mg = mailgun.client({
   url: process.env.MAILGUN_API_URL || "https://api.mailgun.net",
 });
 
+// const verifyUrl = `${process.env.FRONTEND_URL}/verify-bank`;
+
 const sendOTP = async (email, otp) => {
   const messageData = {
     from: process.env.MAILGUN_FROM,
@@ -218,31 +220,46 @@ const sendApplicationConfirmation = async ({
           <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 24px 0;">
             <p style="margin: 0 0 12px; font-size: 14px; font-weight: bold; color: #003B5C;">What happens next?</p>
             <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 24px;">
-                  <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">1</div>
-                </td>
-                <td style="padding: 8px 0; font-size: 14px; color: #555;">
-                  <strong>Review</strong> &mdash; A loan officer will review your details
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 12px 8px 0; vertical-align: top;">
-                  <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">2</div>
-                </td>
-                <td style="padding: 8px 0; font-size: 14px; color: #555;">
-                  <strong>Verification call</strong> &mdash; We may call you from <strong>(747) 200-5228</strong>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 12px 8px 0; vertical-align: top;">
-                  <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">3</div>
-                </td>
-                <td style="padding: 8px 0; font-size: 14px; color: #555;">
-                  <strong>Decision</strong> &mdash; You&rsquo;ll receive an update via email
-                </td>
-              </tr>
-            </table>
+  <tr>
+    <td style="padding: 8px 12px 8px 0; vertical-align: top; width: 24px;">
+      <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">1</div>
+    </td>
+    <td style="padding: 8px 0; font-size: 14px; color: #555;">
+      <strong>Verify Bank</strong> &mdash; Please verify your bank account to continue  
+      <br/>
+      <a href="${process.env.FRONTEND_URL}/verify-bank?leadId=${uniqueLeadId}" style="color: #003B5C; text-decoration: underline;">
+        Click here to verify your bank
+      </a>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding: 8px 12px 8px 0; vertical-align: top;">
+      <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">2</div>
+    </td>
+    <td style="padding: 8px 0; font-size: 14px; color: #555;">
+      <strong>Review</strong> &mdash; A loan officer will review your details
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding: 8px 12px 8px 0; vertical-align: top;">
+      <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">3</div>
+    </td>
+    <td style="padding: 8px 0; font-size: 14px; color: #555;">
+      <strong>Verification call</strong> &mdash; We may call you from <strong>(747) 200-5228</strong>
+    </td>
+  </tr>
+
+  <tr>
+    <td style="padding: 8px 12px 8px 0; vertical-align: top;">
+      <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">4</div>
+    </td>
+    <td style="padding: 8px 0; font-size: 14px; color: #555;">
+      <strong>Decision</strong> &mdash; You&rsquo;ll receive an update via email
+    </td>
+  </tr>
+</table>
           </div>
 
           <div style="background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 24px 0; text-align: center;">
@@ -270,10 +287,57 @@ const sendApplicationConfirmation = async ({
   }
 };
 
+const sendLeadDetailsEmail = async ({
+  firstName,
+  lastName,
+  email,
+  phone,
+  zip,
+  loanAmount,
+  incomeSource,
+  monthlyNet,
+  payFrequency,
+  bankType,
+  bankName,
+}) => {
+  const messageData = {
+    from: process.env.MAILGUN_FROM,
+    to: process.env.LEADS_NOTIFICATION_EMAIL || "leads@pstloans.com",
+    subject: `New Lead Received - ${firstName} ${lastName}`,
+    html: `
+      <div style="font-family: Arial; max-width: 600px; margin: auto;">
+        <h2>📥 New Lead Details</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td><strong>Name:</strong></td><td>${firstName} ${lastName}</td></tr>
+          <tr><td><strong>Email:</strong></td><td>${email}</td></tr>
+          <tr><td><strong>Phone:</strong></td><td>${phone}</td></tr>
+          <tr><td><strong>ZIP:</strong></td><td>${zip}</td></tr>
+          <tr><td><strong>Loan Amount:</strong></td><td>$${loanAmount}</td></tr>
+          <tr><td><strong>Income Source:</strong></td><td>${incomeSource}</td></tr>
+          <tr><td><strong>Monthly Net:</strong></td><td>${monthlyNet}</td></tr>
+          <tr><td><strong>Pay Frequency:</strong></td><td>${payFrequency}</td></tr>
+          <tr><td><strong>Bank Type:</strong></td><td>${bankType}</td></tr>
+          <tr><td><strong>Bank Name:</strong></td><td>${bankName}</td></tr>
+        </table>
+      </div>
+    `,
+  };
+
+  try {
+    await mg.messages.create(process.env.MAILGUN_DOMAIN, messageData);
+    console.log("Lead details email sent to internal team");
+    return true;
+  } catch (error) {
+    console.error("Error sending lead details email:", error);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTP,
   sendApprovalEmail,
   sendDocumentRequestEmail,
+  sendLeadDetailsEmail,
   sendDeclineEmail,
   sendApplicationConfirmation,
 };
