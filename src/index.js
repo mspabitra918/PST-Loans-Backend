@@ -31,23 +31,28 @@ const pstLoansOriginPattern = /^https:\/\/(?:[\w-]+\.)?pstloans\.com$/i;
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser requests and same-origin calls (e.g., server-to-server)
     if (!origin) return callback(null, true);
 
     const safeOrigin = String(origin).trim().replace(/\/+$/, "");
+
     if (
       allowedOrigins.has(safeOrigin) ||
       pstLoansOriginPattern.test(safeOrigin)
     ) {
       return callback(null, true);
     }
+
     console.error(`CORS blocked origin: ${origin}`);
     return callback(new Error(`CORS policy blocked origin: ${origin}`), false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   optionsSuccessStatus: 204,
 };
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // CORS must come before helmet so preflight responses aren't blocked
 app.use(cors(corsOptions));
