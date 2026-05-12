@@ -27,6 +27,7 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:3000",
   frontendUrl,
 ]);
+const pstLoansOriginPattern = /^https:\/\/(?:[\w-]+\.)?pstloans\.com$/i;
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -34,7 +35,10 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     const safeOrigin = String(origin).trim().replace(/\/+$/, "");
-    if (allowedOrigins.has(safeOrigin)) {
+    if (
+      allowedOrigins.has(safeOrigin) ||
+      pstLoansOriginPattern.test(safeOrigin)
+    ) {
       return callback(null, true);
     }
     console.error(`CORS blocked origin: ${origin}`);
@@ -47,7 +51,6 @@ const corsOptions = {
 
 // CORS must come before helmet so preflight responses aren't blocked
 app.use(cors(corsOptions));
-app.options("/{*splat}", cors(corsOptions));
 
 app.use(
   helmet({
