@@ -29,33 +29,60 @@ const allowedOrigins = new Set([
 ]);
 const pstLoansOriginPattern = /^https:\/\/(?:[\w-]+\.)?pstloans\.com$/i;
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     if (!origin) return callback(null, true);
 
-    const safeOrigin = String(origin).trim().replace(/\/+$/, "");
+//     const safeOrigin = String(origin).trim().replace(/\/+$/, "");
 
-    if (
-      allowedOrigins.has(safeOrigin) ||
-      pstLoansOriginPattern.test(safeOrigin)
-    ) {
-      return callback(null, true);
-    }
+//     if (
+//       allowedOrigins.has(safeOrigin) ||
+//       pstLoansOriginPattern.test(safeOrigin)
+//     ) {
+//       return callback(null, true);
+//     }
 
-    console.error(`CORS blocked origin: ${origin}`);
-    return callback(new Error(`CORS policy blocked origin: ${origin}`), false);
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 204,
-};
+//     console.error(`CORS blocked origin: ${origin}`);
+//     return callback(new Error(`CORS policy blocked origin: ${origin}`), false);
+//   },
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   optionsSuccessStatus: 204,
+// };
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
 
 // CORS must come before helmet so preflight responses aren't blocked
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
+
+app.use((req, res, next) => {
+  const allowedOrigins = ["https://pstloans.com", "https://www.pstloans.com"];
+
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+  );
+
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 app.use(
   helmet({
