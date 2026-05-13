@@ -1,117 +1,18 @@
-// const express = require("express");
-// const cors = require("cors");
-// const helmet = require("helmet");
-// const rateLimit = require("express-rate-limit");
-// const morgan = require("morgan");
-// const path = require("path");
-// require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
-
-// const leadRoutes = require("./routes/leadRoutes");
-// const authRoutes = require("./routes/authRoutes");
-// const xmlRoutes = require("./routes/xmlRoutes");
-// const {
-//   getApplicationData,
-//   submitBankVerification,
-// } = require("./controllers/leadController");
-
-// const app = express();
-
-// // Middleware
-// const rawFrontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-// const frontendUrl = String(rawFrontendUrl).trim().replace(/\/+$/, "");
-
-// const allowedOrigins = new Set([
-//   "https://pstloans.com",
-//   "https://www.pstloans.com",
-//   "http://localhost:3000",
-//   "http://127.0.0.1:3000",
-//   frontendUrl,
-// ]);
-// const pstLoansOriginPattern = /^https:\/\/(?:[\w-]+\.)?pstloans\.com$/i;
-
-// const corsOptions = {
-//   origin: (origin, callback) => {
-//     if (!origin) return callback(null, true);
-
-//     const safeOrigin = String(origin).trim().replace(/\/+$/, "");
-
-//     if (
-//       allowedOrigins.has(safeOrigin) ||
-//       pstLoansOriginPattern.test(safeOrigin)
-//     ) {
-//       return callback(null, true);
-//     }
-
-//     console.error(`CORS blocked origin: ${origin}`);
-//     return callback(new Error(`CORS policy blocked origin: ${origin}`), false);
-//   },
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-//   optionsSuccessStatus: 204,
-// };
-
-// app.use(cors(corsOptions));
-// app.options("*", cors(corsOptions));
-
-// // CORS must come before helmet so preflight responses aren't blocked
-// app.use(cors(corsOptions));
-
-// app.use(
-//   helmet({
-//     crossOriginResourcePolicy: { policy: "cross-origin" },
-//   }),
-// );
-// app.use(express.json());
-// app.use(morgan("dev"));
-
-// // Routes
-// app.use("/api/leads", leadRoutes);
-// app.use("/api/leads/export", xmlRoutes);
-// app.use("/api/auth", authRoutes);
-
-// // Bank Verification Lookup (Root level for easier access)
-// app.get("/bank-verification/lookup", getApplicationData);
-// app.post("/api/bank-verification", submitBankVerification);
-
-// // Basic Route
-// app.get("/", (req, res) => {
-//   res.send("PST Loans API");
-// });
-
-// // Error handling middleware
-// app.use((err, req, res, next) => {
-//   console.error(err.stack);
-//   res.status(500).json({
-//     success: false,
-//     message: "Something went wrong!",
-//     error: process.env.NODE_ENV === "development" ? err.message : undefined,
-//   });
-// });
-
-// const PORT = process.env.PORT || 5001;
-
-// // For local development
-// if (process.env.NODE_ENV !== "production") {
-//   app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
-//   });
-// }
-
-// // For Vercel serverless deployment
-// module.exports = app;
-
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
 const path = require("path");
-require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+
+require("dotenv").config({
+  path: path.resolve(__dirname, "../.env"),
+});
 
 const leadRoutes = require("./routes/leadRoutes");
 const authRoutes = require("./routes/authRoutes");
 const xmlRoutes = require("./routes/xmlRoutes");
+
 const {
   getApplicationData,
   submitBankVerification,
@@ -121,7 +22,7 @@ const app = express();
 
 /**
  * =========================
- * CORS CONFIG (FIXED)
+ * CORS CONFIG
  * =========================
  */
 const allowedOrigins = [
@@ -133,13 +34,15 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
     ? String(process.env.FRONTEND_URL).trim().replace(/\/+$/, "")
     : null,
-];
+].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow server-to-server or curl requests
-      if (!origin) return callback(null, true);
+      // Allow curl/Postman/server-to-server
+      if (!origin) {
+        return callback(null, true);
+      }
 
       const cleanOrigin = origin.replace(/\/+$/, "");
 
@@ -148,8 +51,10 @@ app.use(
       }
 
       console.log("❌ Blocked CORS origin:", origin);
+
       return callback(new Error("Not allowed by CORS"));
     },
+
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -157,26 +62,30 @@ app.use(
   }),
 );
 
-// Handle preflight requests
-app.use(cors());
-
 /**
  * =========================
- * SECURITY & LOGGING
+ * SECURITY
  * =========================
  */
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
   }),
 );
 
+/**
+ * =========================
+ * MIDDLEWARE
+ * =========================
+ */
 app.use(express.json());
 app.use(morgan("dev"));
 
 /**
  * =========================
- * RATE LIMIT (optional but good)
+ * RATE LIMIT
  * =========================
  */
 const limiter = rateLimit({
@@ -195,8 +104,13 @@ app.use("/api/leads", leadRoutes);
 app.use("/api/leads/export", xmlRoutes);
 app.use("/api/auth", authRoutes);
 
-// Bank verification routes
+/**
+ * =========================
+ * BANK VERIFICATION
+ * =========================
+ */
 app.get("/bank-verification/lookup", getApplicationData);
+
 app.post("/api/bank-verification", submitBankVerification);
 
 /**
@@ -230,10 +144,8 @@ app.use((err, req, res, next) => {
  */
 const PORT = process.env.PORT || 6001;
 
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-}
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 
 module.exports = app;
