@@ -130,7 +130,9 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://31.220.58.248:3004",
-  FRONTEND_URL ? String(FRONTEND_URL).trim().replace(/\/+$/, "") : null,
+  process.env.FRONTEND_URL
+    ? String(process.env.FRONTEND_URL).trim().replace(/\/+$/, "")
+    : null,
 ];
 
 app.use(
