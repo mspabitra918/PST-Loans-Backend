@@ -51,7 +51,7 @@ const brandFooter = `
   <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 12px; color: #aaa; text-align: center;">
     PST Loans &bull; 355 S Grand Ave, Office #20 W, Los Angeles, CA 90071<br>
-    (747) 200-5228 &bull; support@pstloans.example
+    (747) 208-0334 &bull; support@pstloans.example
   </p>
   <p style="font-size: 11px; color: #ccc; text-align: center;">
     &copy; ${new Date().getFullYear()} PST Loans. All rights reserved.
@@ -83,7 +83,7 @@ const sendApprovalEmail = async (lead) => {
             Once signed, funds will be deposited into your account as early as the <strong>next business day</strong>.
           </p>
           <p style="font-size: 14px; color: #888; margin-top: 24px;">
-            Questions? Call us at <strong>(747) 200-5228</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
+            Questions? Call us at <strong>(747) 208-0334</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
           </p>
         </div>
         ${brandFooter}
@@ -131,7 +131,7 @@ const sendDocumentRequestEmail = async (lead, uploadLink) => {
             This link is unique to your application and expires in 7 days.
           </p>
           <p style="font-size: 14px; color: #888; margin-top: 24px;">
-            Need help? Call us at <strong>(747) 200-5228</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
+            Need help? Call us at <strong>(747) 208-0334</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
           </p>
         </div>
         ${brandFooter}
@@ -175,7 +175,7 @@ const sendDeclineEmail = async (lead) => {
             We encourage you to review your credit report and work on building your financial profile. We would love to help you in the future.
           </p>
           <p style="font-size: 14px; color: #888; margin-top: 24px;">
-            If you have questions, reach us at <strong>(747) 200-5228</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
+            If you have questions, reach us at <strong>(747) 208-0334</strong> Mon&ndash;Fri, 8:30 AM &ndash; 6:30 PM PT.
           </p>
         </div>
         ${brandFooter}
@@ -247,7 +247,7 @@ const sendApplicationConfirmation = async ({
       <div style="width: 24px; height: 24px; background: #003B5C; color: white; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;">3</div>
     </td>
     <td style="padding: 8px 0; font-size: 14px; color: #555;">
-      <strong>Verification call</strong> &mdash; We may call you from <strong>(747) 200-5228</strong>
+      <strong>Verification call</strong> &mdash; We may call you from <strong>(747) 208-0334</strong>
     </td>
   </tr>
 
@@ -264,12 +264,12 @@ const sendApplicationConfirmation = async ({
 
           <div style="background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; margin: 24px 0; text-align: center;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-              <strong>Important:</strong> Please keep your phone nearby. We will call from <strong>(747) 200-5228</strong> if we need further information.
+              <strong>Important:</strong> Please keep your phone nearby. We will call from <strong>(747) 208-0334</strong> if we need further information.
             </p>
           </div>
 
           <p style="font-size: 14px; color: #888; margin-top: 24px; text-align: center;">
-            Questions? Call <strong>(747) 200-5228</strong> or reply to this email.
+            Questions? Call <strong>(747) 208-0334</strong> or reply to this email.
           </p>
         </div>
         ${brandFooter}
