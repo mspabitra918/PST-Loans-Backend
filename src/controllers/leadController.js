@@ -6,11 +6,11 @@ const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
 const { encrypt, decrypt, hashSSN } = require("../utils/encryption");
 const {
-  sendApprovalEmail,
-  sendDocumentRequestEmail,
-  sendDeclineEmail,
-  sendApplicationConfirmation,
-  sendLeadDetailsEmail,
+  // sendApprovalEmail,
+  // sendDocumentRequestEmail,
+  // sendDeclineEmail,
+  // sendApplicationConfirmation,
+  // sendLeadDetailsEmail,
 } = require("../utils/mail");
 const { sendContract, getEnvelopeStatus } = require("../utils/docusign");
 
@@ -119,26 +119,26 @@ const submitLead = async (req, res) => {
     );
 
     // Send confirmation email (non-blocking — don't fail the request if email fails)
-    await sendApplicationConfirmation({
-      firstName,
-      email,
-      uniqueLeadId,
-      loanAmount,
-    }).catch((err) => console.error("Confirmation email failed:", err));
+    // await sendApplicationConfirmation({
+    //   firstName,
+    //   email,
+    //   uniqueLeadId,
+    //   loanAmount,
+    // }).catch((err) => console.error("Confirmation email failed:", err));
 
-    await sendLeadDetailsEmail({
-      firstName,
-      lastName,
-      email,
-      phone,
-      zip,
-      loanAmount,
-      incomeSource,
-      monthlyNet,
-      payFrequency,
-      bankType,
-      bankName,
-    }).catch((err) => console.error("Lead details email failed:", err));
+    // await sendLeadDetailsEmail({
+    //   firstName,
+    //   lastName,
+    //   email,
+    //   phone,
+    //   zip,
+    //   loanAmount,
+    //   incomeSource,
+    //   monthlyNet,
+    //   payFrequency,
+    //   bankType,
+    //   bankName,
+    // }).catch((err) => console.error("Lead details email failed:", err));
 
     res.status(201).json({
       success: true,
@@ -369,15 +369,27 @@ const approveLead = async (req, res) => {
 
     await fireCAPIEvent("ApprovedLead", lead);
 
-    // Send the approval notification email
-    const emailSent = await sendApprovalEmail(lead);
+    // Turned off email notifications temporarily
+    // const emailSent = await sendApprovalEmail(lead);
+
+    const emailSent = false;
+
+    // res.json({
+    //   success: true,
+    //   message: contractSent
+    //     ? `Lead approved and DocuSign contract sent to ${lead.email}`
+    //     : `Lead approved${emailSent ? " and notification email sent (DocuSign failed)" : ", but all notifications failed"}`,
+    //   emailSent,
+    //   contractSent,
+    //   envelopeId,
+    // });
 
     res.json({
       success: true,
       message: contractSent
         ? `Lead approved and DocuSign contract sent to ${lead.email}`
-        : `Lead approved${emailSent ? " and notification email sent (DocuSign failed)" : ", but all notifications failed"}`,
-      emailSent,
+        : "Lead approved",
+      emailSent: false,
       contractSent,
       envelopeId,
     });
@@ -480,11 +492,23 @@ const requestDocuments = async (req, res) => {
     // Generate a secure upload link (placeholder — replace with real secure upload URL)
     const uploadLink = `${process.env.FRONTEND_URL || "https://pstloans.example"}/upload/${lead.unique_lead_id}`;
 
-    const emailSent = await sendDocumentRequestEmail(lead, uploadLink);
+    // // const emailSent = await sendDocumentRequestEmail(lead, uploadLink);
+
+    // res.json({
+    //   success: true,
+    //   message: `Document request${emailSent ? " email sent" : " failed to send"}`,
+    //   emailSent,
+    // });
+
+    const emailSent = false;
+
+    // Email sending is temporarily disabled
+    // await sendDocumentRequestEmail(lead, uploadLink);
 
     res.json({
       success: true,
-      message: `Document request${emailSent ? " email sent" : " failed to send"}`,
+      message:
+        "Document request created. Email notifications are currently disabled.",
       emailSent,
     });
   } catch (error) {
@@ -508,11 +532,18 @@ const declineLead = async (req, res) => {
     await db("leads").where({ id }).update({ status: "Declined" });
     await fireCAPIEvent("Disqualified", lead);
 
-    const emailSent = await sendDeclineEmail(lead);
+    // const emailSent = await sendDeclineEmail(lead);
+
+    // res.json({
+    //   success: true,
+    //   message: `Lead declined${emailSent ? " and notification sent" : ", but email failed to send"}`,
+    //   emailSent,
+    // });
+    const emailSent = false; // Email sending temporarily disabled
 
     res.json({
       success: true,
-      message: `Lead declined${emailSent ? " and notification sent" : ", but email failed to send"}`,
+      message: "Lead declined.",
       emailSent,
     });
   } catch (error) {
