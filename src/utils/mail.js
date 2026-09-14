@@ -1,44 +1,141 @@
-const formData = require("form-data");
-const Mailgun = require("mailgun.js");
+// const formData = require("form-data");
+// const Mailgun = require("mailgun.js");
 
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: "api",
-  key: process.env.MAILGUN_API_KEY,
-  url: process.env.MAILGUN_API_URL || "https://api.mailgun.net",
+// const mailgun = new Mailgun(formData);
+// const mg = mailgun.client({
+//   username: "api",
+//   key: process.env.MAILGUN_API_KEY,
+//   url: process.env.MAILGUN_API_URL || "https://api.mailgun.net",
+// });
+
+// // const verifyUrl = `${process.env.FRONTEND_URL}/verify-bank`;
+
+// const sendOTP = async (email, otp) => {
+//   const messageData = {
+//     from: process.env.MAILGUN_FROM,
+//     to: email,
+//     subject: "Your Verification Code",
+//     text: `Your verification code is: ${otp}. It will expire in 10 minutes.`,
+//     html: `
+//       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+//         <h2 style="color: #333; text-align: center;">Verification Code</h2>
+//         <p style="font-size: 16px; color: #555;">Hello,</p>
+//         <p style="font-size: 16px; color: #555;">Your verification code for logging into PTS Loan is:</p>
+//         <div style="background-color: #f4f4f4; padding: 15px; border-radius: 4px; text-align: center; margin: 20px 0;">
+//           <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
+//         </div>
+//         <p style="font-size: 14px; color: #888; text-align: center;">This code will expire in 10 minutes. If you didn't request this code, please ignore this email.</p>
+//         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+//         <p style="font-size: 12px; color: #aaa; text-align: center;">© 2026 PTS Loan. All rights reserved.</p>
+//       </div>
+//     `,
+//   };
+
+//   try {
+//     await mg.messages.create(process.env.MAILGUN_DOMAIN, messageData);
+//     console.log(`OTP sent to ${email}`);
+//     return true;
+//   } catch (error) {
+//     console.error("Error sending OTP via Mailgun:", error);
+//     return false;
+//   }
+// };
+
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.USER_MAIL,
+    pass: process.env.USER_PASSWORD,
+  },
 });
 
-// const verifyUrl = `${process.env.FRONTEND_URL}/verify-bank`;
-
 const sendOTP = async (email, otp) => {
-  const messageData = {
-    from: process.env.MAILGUN_FROM,
-    to: email,
-    subject: "Your Verification Code",
-    text: `Your verification code is: ${otp}. It will expire in 10 minutes.`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <h2 style="color: #333; text-align: center;">Verification Code</h2>
-        <p style="font-size: 16px; color: #555;">Hello,</p>
-        <p style="font-size: 16px; color: #555;">Your verification code for logging into PTS Loan is:</p>
-        <div style="background-color: #f4f4f4; padding: 15px; border-radius: 4px; text-align: center; margin: 20px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
-        </div>
-        <p style="font-size: 14px; color: #888; text-align: center;">This code will expire in 10 minutes. If you didn't request this code, please ignore this email.</p>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 12px; color: #aaa; text-align: center;">© 2026 PTS Loan. All rights reserved.</p>
-      </div>
-    `,
-  };
-
   try {
-    await mg.messages.create(process.env.MAILGUN_DOMAIN, messageData);
-    console.log(`OTP sent to ${email}`);
+    await transporter.sendMail({
+      from: `"PTS Loan" <${process.env.USER_MAIL}>`,
+      to: email,
+      subject: "Your PTS Loan Verification Code",
+
+      text: `Your verification code is: ${otp}. It will expire in 10 minutes.`,
+
+      html: `
+        <div style="
+          font-family: Arial, sans-serif;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+        ">
+          <h2 style="color: #333; text-align: center;">
+            Verification Code
+          </h2>
+
+          <p style="font-size: 16px; color: #555;">
+            Hello,
+          </p>
+
+          <p style="font-size: 16px; color: #555;">
+            Your verification code for logging into PTS Loan is:
+          </p>
+
+          <div style="
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 20px 0;
+          ">
+            <span style="
+              font-size: 32px;
+              font-weight: bold;
+              letter-spacing: 5px;
+              color: #007bff;
+            ">
+              ${otp}
+            </span>
+          </div>
+
+          <p style="
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+          ">
+            This code will expire in 10 minutes.
+            If you didn't request this code, please ignore this email.
+          </p>
+
+          <hr style="
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+          ">
+
+          <p style="
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+          ">
+            © 2026 PTS Loan. All rights reserved.
+          </p>
+        </div>
+      `,
+    });
+
+    console.log(`✅ OTP sent to ${email}`);
+
     return true;
   } catch (error) {
-    console.error("Error sending OTP via Mailgun:", error);
+    console.error("❌ Error sending OTP:", error);
+
     return false;
   }
+};
+
+module.exports = {
+  sendOTP,
 };
 
 const brandHeader = `

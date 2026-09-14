@@ -32,50 +32,140 @@ const register = async (req, res) => {
   }
 };
 
+// const login = async (req, res) => {
+//   const { email, password } = req.body;
+//   try {
+//     const user = await db("users").where({ email }).first();
+//     if (!user) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     // Generate 6-digit OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+//     // Update user with OTP
+//     await db("users").where({ id: user.id }).update({
+//       otp,
+//       otp_expires_at,
+//     });
+
+//     // Send OTP via Mailgun
+//     const sent = await sendOTP(user.email, otp);
+
+//     if (!sent) {
+//       return res
+//         .status(500)
+//         .json({ success: false, message: "Error sending verification code" });
+//     }
+
+//     res.json({
+//       success: true,
+//       message: "Verification code sent to your email",
+//       mfa_required: true,
+//       email: user.email, // Send back email to use in next step
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Error logging in" });
+//   }
+// };
+
 const login = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await db("users").where({ email }).first();
+
     if (!user) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid credentials" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
+    // =====================================================
+    // OTP TEMPORARILY DISABLED
+    // =====================================================
+
+    /*
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otp_expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-    // Update user with OTP
+    // OTP expires in 10 minutes
+    const otp_expires_at = new Date(
+      Date.now() + 10 * 60 * 1000
+    );
+
+    // Save OTP
     await db("users").where({ id: user.id }).update({
       otp,
       otp_expires_at,
     });
 
-    // Send OTP via Mailgun
+    // Send OTP
     const sent = await sendOTP(user.email, otp);
 
     if (!sent) {
-      return res
-        .status(500)
-        .json({ success: false, message: "Error sending verification code" });
+      return res.status(500).json({
+        success: false,
+        message: "Error sending verification code",
+      });
     }
+    */
 
-    res.json({
+    // =====================================================
+    // DIRECT LOGIN - NO OTP
+    // =====================================================
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET || "secret_key",
+      {
+        expiresIn: "1d",
+      },
+    );
+
+    return res.json({
       success: true,
-      message: "Verification code sent to your email",
-      mfa_required: true,
-      email: user.email, // Send back email to use in next step
+      message: "Login successful",
+      token,
+      mfa_required: false,
+
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error logging in" });
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error logging in",
+    });
   }
 };
 
@@ -149,7 +239,9 @@ const getMe = async (req, res) => {
       .select("id", "name", "email", "role", "created_at")
       .first();
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
     res.json({ success: true, user });
   } catch (error) {
